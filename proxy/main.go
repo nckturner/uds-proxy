@@ -2,7 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"net"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 )
 
@@ -21,31 +26,45 @@ func main() {
 		os.Exit(1)
 	}
 
-	defer listener.Close()
-
-	for {
-		// Listen for an incoming connection.
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
-			os.Exit(1)
-		}
-		// Handle connections in a new goroutine.
-		go handleRequest(conn)
+	server := http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handleHTTP(w, r)
+		}),
 	}
+
+	server.Serve(listener)
 }
 
-// Handles incoming requests.
-func handleRequest(conn net.Conn) {
-	// Make a buffer to hold incoming data.
-	buf := make([]byte, 1024)
-	// Read the incoming connection into the buffer.
-	_, err := conn.Read(buf)
+func handleHTTP(w http.ResponseWriter, req *http.Request) {
+	requestDump, err := httputil.DumpRequest(req, true)
 	if err != nil {
-		fmt.Println("Error reading:", err.Error())
+		fmt.Println(err)
+		return
+	} else {
+		fmt.Println(string(requestDump))
 	}
-	// Send a response back to person contacting us.
-	conn.Write([]byte("Message received."))
-	// Close the connection when you're done with it.
-	conn.Close()
+
+	u, err := url.Parse("http://localhost:9994/")
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.URL = u
+
+	resp, err := http.DefaultTransport.RoundTrip(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	defer resp.Body.Close()
+	copyHeader(w.Header(), resp.Header)
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}
+
+func copyHeader(dst, src http.Header) {
+	for k, vv := range src {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
+	}
 }

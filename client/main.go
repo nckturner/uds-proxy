@@ -75,24 +75,23 @@ func connectProxy(finished chan bool, post, sockPath, uri string) {
 		},
 	}
 
+	//fullURI := "http://unix" + uri
+	fullURI := "http://localhost:9994" + uri
+
 	delay := 100
 	num := 3
-
 	for i := 0; i <= num; i++ {
-		backoff := backoff(delay, i)
-		fmt.Printf("delay: %v\n", backoff)
-		time.Sleep(backoff)
+		time.Sleep(backoff(delay, i))
 		if len(post) == 0 {
-			response, err = client.Get("http://unix" + uri)
+			response, err = client.Get(fullURI)
 		} else {
-			response, err = client.Post("http://unix"+uri, "application/octet-stream", strings.NewReader(post))
+			response, err = client.Post(fullURI, "application/octet-stream", strings.NewReader(post))
 		}
 
 		if err != nil {
-			fmt.Printf("Error connecting to the socket %s: %v\n", "http://unix"+uri, err)
-			if i == num {
-				os.Exit(1)
-			}
+			fmt.Printf("Error connecting to the socket %s: %v\n", fullURI, err)
+		} else {
+			break
 		}
 	}
 
