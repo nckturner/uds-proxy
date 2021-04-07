@@ -24,6 +24,7 @@ func main() {
 
 	server := http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("Received request for %q\n", html.EscapeString(r.URL.Path))
 			fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 		}),
 	}

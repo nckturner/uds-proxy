@@ -1,4 +1,4 @@
-PROXY_SRC = $(wildcard signer/*.go)
+PROXY_SRC = $(wildcard proxy/*.go)
 CLIENT_SRC = $(wildcard client/*.go)
 SERVER_SRC = $(wildcard server/*.go)
 
